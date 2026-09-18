@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>            <string>to HEIF</string>
+    <key>CFBundleDisplayName</key>     <string>to HEIF</string>
+    <key>CFBundleIdentifier</key>      <string>com.sunlu.jpg2heif</string>
+    <key>CFBundleExecutable</key>      <string>jpg2heif</string>
+    <key>CFBundlePackageType</key>     <string>APPL</string>
+    <key>CFBundleIconFile</key>        <string>AppIcon</string>
+    <key>CFBundleShortVersionString</key> <string>0.1</string>
+    <key>CFBundleVersion</key>         <string>1</string>
+    <key>LSMinimumSystemVersion</key>  <string>15.0</string>
+    <key>NSHighResolutionCapable</key> <true/>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>读取图库中的 JPEG 原图，写入转换后的 HEIF，并在你确认后删除原图。</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>把转换后的 HEIF 照片存回你的图库。</string>
+</dict>
+</plist>

@@ -1,0 +1,6 @@
+# Build output. The .noindex suffix also keeps Spotlight out of it.
+build.noindex/
+.build/
+.swiftpm/
+
+.DS_Store
