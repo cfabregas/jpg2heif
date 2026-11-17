@@ -1,46 +1,84 @@
 # to HEIF
 
-一个 macOS 工具：把「照片」图库里的 JPEG / PNG 转成 HEIF，保留 HDR 增益图，
-校验通过后再让你决定是否删除原图。
+把 Mac「照片」图库里的 JPEG 和 PNG 照片转成 HEIF 格式，在画质几乎不变的前提下节省大量空间。HDR 照片转换后依然是 HDR。
 
-```bash
-./build-app.sh      # 构建 build.noindex/to HEIF.app
-./package-dmg.sh    # 连带打出可分发的 DMG
-```
+## 主要功能
 
-需要 macOS 15+ 和完整的 Xcode（SDK 里要有 `kCGImageAuxiliaryDataTypeISOGainMap`）。
+### 转换
 
-## 结构
+- 支持 JPEG、PNG，以及 JPEG+RAW 配对照片
+- 选中的照片里如果混有其他格式，会自动跳过，并告诉你排除了几张
+- HDR 照片转换后保持 HDR 效果，普通照片照常转换
+- 质量可调（默认 80），默认质量下肉眼基本看不出差别
+- 可选「优化尺寸」：长边超过设定值（默认 6000 像素）的照片等比缩小，进一步减小体积
+- 转换后如果没有变小，自动跳过
+- 转换前就能看到预计节省多少空间
 
-| 路径 | 作用 |
-|---|---|
-| `Sources/ConversionKit/` | 转换核心：格式嗅探、转码、校验、像素比对 |
-| `Sources/heifconv/` | 命令行工具，用于诊断与实测 |
-| `App/Sources/` | SwiftUI 界面与 PhotoKit 管线 |
-| `Tools/makeicon.swift` | 从 `App/Resources/logo.png` 生成 iconset |
+### 保留原有信息
 
-命令行工具带几个实测用的子命令：`inspect`、`sweep`（质量-体积曲线）、
-`diff`（逐像素 PSNR）、`generations`（多代转换的累积损失）。
+- 拍摄时间、拍摄地点、相机参数（EXIF）
+- 照片方向、PNG 的透明背景
+- 个人收藏状态
+- 文件名（扩展名改为 .heic）
 
-## 几个踩过坑的决定
+### 选照片
 
-**不用 `CGImageSourceGetType` 判断格式。** 它在带增益图的 JPEG 上，一旦
-ImageIO 深度解析过文件就会改口返回 `public.heic`。改成自己嗅探文件头。
+- 浏览所有照片、最近添加、个人收藏、不在任何相簿中的照片，以及每个相簿
+- 单击选择、按住 Shift 连选、拖动鼠标框选，也可以一键全选
+- 每张照片上标注格式（JPEG / PNG / HEIF / JPEG+RAW）以及 HDR、实况、收藏等信息
+- 按空格键大图预览，左右方向键切换上一张、下一张；支持 HDR 的屏幕上能看到 HDR 效果
 
-**转码走 ImageIO 而不是 CoreImage。** `CIContext.writeHEIFRepresentation`
-配合 `.hdrImage` 会让 CoreImage **重新推导**一张增益图，实测比原图亮 2%、
-饱和度低 1.7 个点。改用 `CGImageDestinationAddImageFromSource` 配合
-`kCGImageDestinationPreserveGainMap`，原样搬运，误差回到 0.01 个点以内，
-顺带保住了 EXIF、GPS、方向标记和透明通道。
+### 存到哪里
 
-**HDR 角标分两条路探测。** HEIF 看 `ftyp` box 里有没有 `tmap` 品牌（只需读
-4KB）；JPEG 搜文件头 512KB 内的 XMP 标记。Photos 数据库里的 `isHDR` /
-`hdrGain` 只对 HEIF 生效，靠不住。搜索直接在字节上做——先转成 String 再搜
-实测要 9ms，字节搜索只要 0.02ms。
+- 放回原来的相簿（照片原本在几个相簿，就放回几个）
+- 放进指定相簿或新建相簿
+- 只放进图库，不加入任何相簿
 
-**预览按显示器能力切换渲染路径。** 不支持 EDR 的屏幕上不做 HDR 展开，否则
-高光会被硬裁成纯白。判据用 `maximumPotentialExtendedDynamicRange...`，因为
-`maximum...`（当前值）在支持的屏幕上没有 HDR 内容时也是 1.0。
+### 删除原图
 
-**删除前必须过校验。** 尺寸（含方向转置与缩放后的预期值）、增益图、EXIF、
-GPS 逐项确认，任一不符就不进删除列表。删除走「最近删除」，30 天可恢复。
+- 转换完成后，可以一键删除原来的 JPEG
+- 只有确认转换成功、尺寸正确、HDR 和照片信息都已保留的照片，才会出现在删除列表里
+- JPEG+RAW 照片会连同 RAW 文件一起删除
+- 删除的照片进入「最近删除」，30 天内可以恢复
+- 也可以不转换，直接删除选中的照片
+
+### 其他
+
+- 每次转换都会记一份日志，可以随时查看或清理
+- 同时支持 Apple 芯片和 Intel 芯片的 Mac
+
+## 安装
+
+1. 在 [Releases](https://github.com/cfabregas/jpg2heif/releases) 下载最新的 DMG
+2. 打开 DMG，把「to HEIF」拖到「应用程序」文件夹
+3. 打开「终端」，粘贴下面这行并回车：
+
+   ```
+   xattr -dr com.apple.quarantine "/Applications/to HEIF.app"
+   ```
+
+4. 打开 App，首次启动时允许访问「照片」
+
+第 3 步不能跳过。这个 App 没有经过 Apple 公证，macOS 会提示「已损坏，无法打开」——文件本身没有问题，这一步只是解除系统对下载文件的拦截。
+
+## 使用
+
+1. 在左侧选一个相簿或分类
+2. 勾选要转换的照片
+3. 在右侧选择保存位置，按需调整质量和尺寸
+4. 点击右下角「转换」
+5. 在结果页确认无误后，决定是否删除原图
+
+## 注意事项
+
+- **转换是有损的。** 默认质量下肉眼看不出差别，但原图删除超过 30 天后就无法找回。建议先拿几张试试效果。
+- **实况照片**转换后只保留静态画面，动态部分会丢失。
+- **编辑过的照片**按编辑后的样子转换，原来的编辑记录不会保留。
+- 照片的**标题、说明、关键词、人物**等信息存在「照片」的数据库里，不会带到新照片上。
+- **共享相簿**里的照片可以转换，但转换后的照片只会进入你自己的图库，不会放回共享相簿，原图也无法删除。
+- **动图**（GIF 等）不会转换，转了只会剩下一帧。
+- 原图只存在 iCloud 上的照片，转换时需要先下载，速度取决于网络。
+
+## 系统要求
+
+macOS 15 或更高版本，Apple 芯片或 Intel 芯片均可。
