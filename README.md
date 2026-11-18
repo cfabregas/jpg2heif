@@ -2,6 +2,8 @@
 
 把 Mac「照片」图库里的 JPEG 和 PNG 照片转成 HEIF 格式，在画质几乎不变的前提下节省大量空间。HDR 照片转换后依然是 HDR。
 
+![to HEIF 主界面](docs/screenshot.png)
+
 ## 主要功能
 
 ### 转换
